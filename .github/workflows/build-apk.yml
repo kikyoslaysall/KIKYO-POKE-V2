@@ -11,14 +11,13 @@ permissions:
 
 jobs:
   build:
-    name: Build KIKYO Android App
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Java 17
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -28,43 +27,32 @@ jobs:
         id: project
         shell: bash
         run: |
-          WRAPPER=$(find . -type f -name gradlew \
-            -not -path '*/.gradle/*' \
-            -not -path '*/build/*' | head -n 1)
+          FILE=$(find . -type f \( \
+            -name settings.gradle \
+            -o -name settings.gradle.kts \
+          \) -not -path '*/.gradle/*' | head -n 1)
 
-          if [ -z "$WRAPPER" ]; then
-            echo "ERROR: gradlew not found"
+          if [ -z "$FILE" ]; then
+            echo "ERROR: Android settings.gradle not found"
             exit 1
           fi
 
-          DIR=$(dirname "$WRAPPER")
+          DIR=$(dirname "$FILE")
           echo "dir=$DIR" >> "$GITHUB_OUTPUT"
 
-      - name: Build APK
-        shell: bash
-        run: |
-          cd "${{ steps.project.outputs.dir }}"
-          chmod +x gradlew
-          ./gradlew --no-daemon assembleDebug
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
 
-      - name: Find APK
-        id: apk
-        shell: bash
-        run: |
-          APK=$(find "${{ steps.project.outputs.dir }}" \
-            -type f -name '*.apk' \
-            -path '*/build/outputs/apk/*' | head -n 1)
-
-          if [ -z "$APK" ]; then
-            echo "APK was not generated"
-            exit 1
-          fi
-
-          echo "path=$APK" >> "$GITHUB_OUTPUT"
+      - name: Build Android APK
+        working-directory: ${{ steps.project.outputs.dir }}
+        run: gradle --no-daemon assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: KIKYO-MD-ANDROID-APK
-          path: ${{ steps.apk.outputs.path }}
+          path: ${{ steps.project.outputs.dir }}/**/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
           retention-days: 14
