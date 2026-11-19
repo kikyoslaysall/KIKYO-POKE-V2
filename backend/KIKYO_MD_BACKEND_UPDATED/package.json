@@ -1,0 +1,9 @@
+{
+  "name": "kikyo-md-api",
+  "version": "1.1.0",
+  "private": true,
+  "description": "KIKYO MD Android app API for Node.js/Pterodactyl",
+  "main": "src/server.js",
+  "scripts": {"start":"node src/server.js", "check":"node --check src/server.js && node --check scripts/create-invite.js"},
+  "engines": {"node": ">=20"}
+}
