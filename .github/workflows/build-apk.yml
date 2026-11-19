@@ -1,0 +1,51 @@
+name: Build KIKYO MD APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Find Android Project
+        id: project
+        shell: bash
+        run: |
+          WRAPPER=$(find . -type f -name gradlew \
+            -not -path '*/.gradle/*' \
+            -not -path '*/build/*' | head -n 1)
+
+          if [ -z "$WRAPPER" ]; then
+            echo "ERROR: Gradle wrapper not found!"
+            exit 1
+          fi
+
+          PROJECT_DIR=$(dirname "$WRAPPER")
+          echo "dir=$PROJECT_DIR" >> "$GITHUB_OUTPUT"
+
+          echo "Android project found: $PROJECT_DIR"
+
+      - name: Build Debug
